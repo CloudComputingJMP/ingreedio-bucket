@@ -19,6 +19,7 @@ app.listen(port, () => {console.log(`Listening on port ${port}`)})
 app.get("/get_images/:id", async (req, res) => {
     const id = req.params.id;
     const res_dic={}
+
     const [files]= await bucket.bucket(bucketName).getFiles({prefix:`${id}/`})
     for (const file of files){
         var type=file.name.split("/")[1].split(".")[0]
@@ -39,9 +40,9 @@ app.post("/post_images",upload.any(),async (req, res) => {
     const url=`${base_url}/${bucketName}/${id}/`
     const res_dict={}
     for (let i=0; i<files.length;i++){
-
         var file=typeMapper(files[i])+extensionMapper(files[i]);
-        const blob= await bucket.bucket(bucketName).file(id+"/"+file)
+        const blob=  bucket.bucket(bucketName).file(id+"/"+file)
+
         const blobStream=blob.createWriteStream({
             meatadata:{
                 contentType:"image/png",
@@ -67,8 +68,11 @@ app.post("/post_images",upload.any(),async (req, res) => {
 app.delete("/delete_images/:id", async (req, res) => {
     const id=req.params.id;
     const [files]= await bucket.bucket(bucketName).getFiles({prefix:`${id}/`})
+    if (files.length==0){
+        return res.status(403).send({"message":"No file found."})
+    }
     for (const file of files){
-        await bucket.bucket(bucketName).file(file.name).delete()
+       await bucket.bucket(bucketName).file(file.name).delete()
     }
     return res.status(200).send({"message":"images deleted successfully."});
 })
